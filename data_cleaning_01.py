@@ -253,32 +253,29 @@ def get_actions_by_date(start_date, end_date):
     else:
         actions = get_all_action()
         actions = actions[(actions.a_date >= start_date) & (actions.a_date < end_date)]
-        a_type_one_hot = pd.get_dummies(actions['a_type'], prefix='%s_%s_a_type' % (start_date, end_date))
-        del actions['a_type']
-        actions = pd.concat([actions, a_type_one_hot], axis=1)
         dump_data(actions, dump_path)
     return actions
 
 
-def get_action_left_join_user_sku_comment_lable_by_date(start_date, end_date):
+def get_action_left_join_user_sku_comment_by_date(start_date, end_date):
     '''
     action left join user sku comment by date
     :return:
     '''
     dump_path = './cache/get_action_left_join_user_sku_comment_%s_%s.pkl' % (start_date, end_date)
-    group = ['user_id', 'sku_id', 'a_date', '%s_%s_a_type_1' % (start_date, end_date),
-             '%s_%s_a_type_2' % (start_date, end_date), '%s_%s_a_type_3' % (start_date, end_date)]
     if is_exist(dump_path):
         action_user_sku_comment = load_data(dump_path)
     else:
         action_user_sku = get_actions_by_date(start_date, end_date)
         comment = get_comment_by_date(start_date)
-        
+        del action_user_sku['a_date']
+        action_user_sku = action_user_sku.groupby(['user_id', 'sku_id', 'a_type'], as_index=False).sum()
+        a_type_one_hot = pd.get_dummies(action_user_sku['a_type'], prefix='a_type')
+        action_user_sku = pd.concat([action_user_sku, a_type_one_hot], axis=1)
+        del action_user_sku['a_type']
         action_user_sku_comment = pd.merge(action_user_sku, comment, on='sku_id', how='left')
-        action_user_sku_comment = action_user_sku_comment.groupby(group, as_index=False).sum()
-        action_user_sku_comment.rename(
-            columns={'a_num': 'a_num_%s_%s' % (start_date, end_date)}, inplace=True)
-        del action_user_sku_comment['a_date']
+        action_user_sku_comment = action_user_sku_comment.fillna(0)
+        action_user_sku_comment.rename(columns={'a_num': 'a_num_%s_%s' % (start_date, end_date)}, inplace=True)
         dump_data(action_user_sku_comment, dump_path)
     return action_user_sku_comment
 
@@ -294,7 +291,7 @@ def get_labels(start_date, end_date):
     if is_exist(dump_path):
         actions = load_data(dump_path)
     else:
-        actions = get_action_left_join_user_sku_comment_lable_by_date(start_date, end_date)
+        actions = get_action_left_join_user_sku_comment_by_date(start_date, end_date)
         # 购买行为的用户信息
         actions = actions[actions['a_type_3'] == 1]
         actions = actions.groupby(['user_id', 'sku_id'], as_index=False).mean()
@@ -309,7 +306,7 @@ def get_train_test_set(o_time):
     获取训练和测试数据
     :return:
     '''
-    date_interval = [1, 7, 14]
+    date_interval = [1, 7, 14, 21, 30, 60, 90, 180, 270, 360]
     dump_path = './cache/get_train_test_set_%s.pkl' % (o_time)
 
     user = get_all_user()
@@ -326,25 +323,23 @@ def get_train_test_set(o_time):
             if is_exist(dump_date_2):
                 if actions is None:
                     actions = load_data(dump_date_2)
-                    print(actions.head(10))
                 else:
                     action = load_data(dump_date_2)
-                    actions = pd.merge(actions, action, how='left', on=['user_id', 'sku_id'])
-                    print(actions.head(10))
+                    actions = pd.merge(actions, action, how='left',
+                                       on=['user_id', 'sku_id', 'a_type_1', 'a_type_2', 'a_type_3'])
+                    actions = actions.fillna(0)
             else:
-                # labels = get_labels(start_days, o_time)
-                # if actions is None:
-                #     actions = get_action_left_join_user_sku_comment_lable_by_date(start_days, o_time)
-                # else:
-                #     actions = pd.merge(actions, get_action_left_join_user_sku_comment_lable_by_date(start_days, o_time),
-                #                        how='left', on=['user_id', 'sku_id'])
-                actions = get_action_left_join_user_sku_comment_lable_by_date(start_days, o_time)
+                actions = get_action_left_join_user_sku_comment_by_date(start_days, o_time)
                 dump_data(actions, dump_date_2)
 
     actions = pd.merge(actions, user, on=['user_id'], how='left')
     actions = pd.merge(actions, sku, on=['sku_id'], how='left')
+    user_sku = actions['user_id', 'sku_id'].copy()
 
-    return actions
+    del actions['user_id']
+    del actions['sku_id']
+
+    return user_sku, actions
 
 
 if __name__ == '__main__':
@@ -354,7 +349,7 @@ if __name__ == '__main__':
     # get_all_action()
     # get_all_user()
     # get_all_sku()
-    get_all_order()
+    # get_all_order()
     # get_all_comment()
     # get_comment_by_date(end_date)
     # get_actions(start_time, end_time)
