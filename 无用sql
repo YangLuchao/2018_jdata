@@ -1,0 +1,8 @@
+SELECT user_id,	o_area,	COUNT(1) as count FROM	jdata_user_order group BY	user_id,	o_area;
+
+
+Select * From 表 Where 重复字段 In (Select 重复字段 From 表 Group By 重复字段 Having Count(*)>1)
+
+
+
+Select d.user_id,d.o_area,d.count From (SELECT user_id,	o_area,	COUNT(1) as count FROM	jdata_user_order group BY	user_id,	o_area) d Where d.user_id In (Select x.user_id From (SELECT user_id,	o_area,	COUNT(1) as count FROM	jdata_user_order group BY	user_id,	o_area) x Group By x.user_id Having Count(*)>1) GROUP BY d.user_id,d.o_area;

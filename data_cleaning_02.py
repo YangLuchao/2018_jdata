@@ -130,8 +130,10 @@ def get_order_user_sku():
 
 
 def get_train_test_set():
+
     order = get_order_user_sku()
-    user_sku = order['user_id', 'sku_id'].copy()
+    order = order[order['o_date'] >= '2017-04-01']
+    user_sku = order[['user_id', 'sku_id']]
     del order['user_id']
     del order['sku_id']
     lables = order['o_date']
