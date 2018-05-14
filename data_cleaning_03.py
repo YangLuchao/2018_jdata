@@ -16,6 +16,7 @@
                 ┗┓┓┏━┳┓┏┛
                   ┃┫┫  ┃┫┫
                   ┗┻┛  ┗┻┛
+                  数据清洗第三版
 """
 
 import time
@@ -102,6 +103,8 @@ def get_order_by_date(start_date, end_date):
     else:
         order = get_all_order()
         order = order[(order.o_date >= start_date) & (order.o_date < end_date)]
+        # one_hot_o_date = pd.get_dummies(order['o_date'], prefix='%s_%s_o_date' % (start_date, end_date))
+        # order = pd.concat([order, one_hot_o_date], axis=1)
         dump_data(order, dump_path)
     return order
 
@@ -112,9 +115,13 @@ def get_order_by_handle(start_date, end_date):
         load_data(dump_path)
     else:
         order = get_order_by_date(start_date, end_date)
+
         del order['o_id']
-        del order['o_date']
+        # order = order.sort_values(by=['user_id', 'sku_id', 'o_date'], ascending=[True, True, False])
+        # lable = order.drop_duplicates(subset=['user_id', 'sku_id''o_date'], keep='last', inplace=True)
+        # del order['o_date']
         order = order.groupby(['user_id', 'sku_id', 'o_area'], as_index=False).sum()
+
         order.rename(columns={'o_area': '%s_%s_o_area' % (start_date, end_date),
                               'o_sku_num': '%s_%s_o_sku_num' % (start_date, end_date)}, inplace=True)
 
