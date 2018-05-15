@@ -26,6 +26,7 @@ import pickle
 import os
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.dates import AutoDateLocator, DateFormatter
 import math
 from pandas.core.frame import DataFrame, Series
 import numpy as np
@@ -78,6 +79,20 @@ def get_from_fname(fname):
     return df_item
 
 
+def get_all_user():
+    '''
+    获取所有用户信息
+    :return:
+    '''
+    dump_path = './cache/get_all_user.pkl'
+    if is_exist(dump_path):
+        user = load_data(dump_path)
+    else:
+        user = get_from_fname(JDATA_USER_BASIC_INFO)
+        dump_data(user, dump_path)
+    return user
+
+
 def get_all_order():
     '''
     获取所有订单信息
@@ -87,7 +102,9 @@ def get_all_order():
     if is_exist(dump_path):
         order = load_data(dump_path)
     else:
+        user = get_all_user()
         order = get_from_fname(JDATA_USER_ORDER)
+        order = pd.merge(order, user, how='left', on='user_id')
         dump_data(order, dump_path)
     return order
 
@@ -123,7 +140,6 @@ def fill_date(order_data, date):
         order_data.append(item_83)
     if order_data[order_data['cate'] == 101] is None:
         order_data.append(item_101)
-
     return order_data
 
 
@@ -140,12 +156,34 @@ def get_order_by_date(date):
     else:
         order = get_all_order()
         cate = get_all_cate()
-
         order = order[order.o_date == date]
         order = pd.merge(order, cate, on='sku_id', how='left')
         order = order[['cate', 'o_sku_num']]
         order = order.groupby(['cate'], as_index=False).sum()
         order['o_date'] = date
+        order = fill_date(order, date)
+        dump_data(order, dump_path)
+    return order
+
+
+def get_order_by_date_sex(date):
+    '''
+    通过开始时间与结束时间截取订单片段,只需要品类和销量,分性别维度
+    :param start_date:
+    :param end_date:
+    :return:
+    '''
+    dump_path = './cache/get_order_by_date_sex_%s.pkl' % (date)
+    if is_exist(dump_path):
+        order = load_data(dump_path)
+    else:
+        order = get_all_order()
+        cate = get_all_cate()
+        order = order[order.o_date == date]
+        order = pd.merge(order, cate, on='sku_id', how='left')
+        order = order[['cate', 'o_sku_num', 'sex']]
+        order = order.groupby(['cate', 'sex'], as_index=False).sum()
+        order['date'] = date
         order = fill_date(order, date)
         dump_data(order, dump_path)
     return order
@@ -168,7 +206,6 @@ def get_all_sku():
         del sku['para_3']
         sku = sku.groupby(['cate', 'sku_id'], as_index=False).sum()
         sku = sku[['cate', 'sku_id']]
-
         dump_data(sku, dump_path)
     return sku
 
@@ -208,7 +245,6 @@ def get_analyze_by_date(date):
 
 
 def plat_date(all_order):
-    time = []
     cate_1 = []
     cate_30 = []
     cate_46 = []
@@ -223,44 +259,125 @@ def plat_date(all_order):
         cate_71.append(data[data['cate'] == 71]['o_sku_num'][3])
         cate_83.append(data[data['cate'] == 83]['o_sku_num'][4])
         cate_101.append(data[data['cate'] == 101]['o_sku_num'][5])
-
-    # time = np.array(time)
-    # cate_1 = np.array(cate_1)
-    # cate_30 = np.array(cate_30)
-    # cate_46 = np.array(cate_46)
-    # cate_71 = np.array(cate_71)
-    # cate_83 = np.array(cate_83)
-    # cate_101 = np.array(cate_101)
-
     mpl.rcParams['font.sans-serif'] = ['SimHei']
     mpl.rcParams['axes.unicode_minus'] = False
     plt.figure(facecolor='w', figsize=(20, 20))
-    plt.plot(time, cate_1, 'r-', linewidth=1, label='1')
-    plt.plot(time, cate_30, 'g-', linewidth=1, label='30')
-    plt.plot(time, cate_46, 'b-', linewidth=1, label='46')
-    plt.plot(time, cate_71, 'k-', linewidth=1, label='71')
-    plt.plot(time, cate_83, 'm-', linewidth=1, label='83')
-    plt.plot(time, cate_101, 'y-', linewidth=1, label='101')
+    plt.plot(cate_1, 'r-', linewidth=1, label='1')
+    plt.plot(cate_30, 'g-', linewidth=1, label='30')
+    plt.plot(cate_46, 'b-', linewidth=1, label='46')
+    plt.plot(cate_71, 'k-', linewidth=1, label='71')
+    plt.plot(cate_83, 'm-', linewidth=1, label='83')
+    plt.plot(cate_101, 'y-', linewidth=1, label='101')
     plt.title('销量对比', fontsize=18)
-    plt.legend(loc='upper left')
     plt.grid(b=True, ls=':')
     plt.show()
 
 
-def show_analyze():
-    dump_path = './cache/show_analyze.pkl'
+def plat_date_sex(all_order):
+    sex_0 = []
+    sex_1 = []
+    sex_2 = []
+    for i, data in enumerate(all_order):
+        sex_0.append(data[data['sex'] == 0][['o_sku_num', 'cate']])
+        sex_1.append(data[data['sex'] == 1][['o_sku_num', 'cate']])
+        sex_2.append(data[data['sex'] == 2][['o_sku_num', 'cate']])
+    all_data = (sex_0, sex_1, sex_2)
+    mpl.rcParams['font.sans-serif'] = ['SimHei']
+    mpl.rcParams['axes.unicode_minus'] = False
+    plt.figure(figsize=(20, 20), facecolor='w')
+    for j, data in enumerate(all_data):
+        cate1 = []
+        cate30 = []
+        cate46 = []
+        cate71 = []
+        cate83 = []
+        cate101 = []
+        plt.subplot(3, 1, j + 1)
+        for i, data in enumerate(data):
+            try:
+                cate_1 = data[data['cate'] == 1]
+                cate_1_dic = cate_1['o_sku_num'].values
+                cate_1_v = cate_1_dic[0]
+                cate1.append(cate_1_v)
+            except IndexError:
+                cate1.append(0)
+
+            try:
+                cate_30 = data[data['cate'] == 30]
+                cate_30_dic = cate_30['o_sku_num'].values
+                cate_30_v = cate_30_dic[0]
+                cate30.append(cate_30_v)
+            except IndexError:
+                cate30.append(0)
+
+            try:
+                cate_46 = data[data['cate'] == 46]
+                cate_46_dic = cate_46['o_sku_num'].values
+                cate_46_v = cate_46_dic[0]
+                cate46.append(cate_46_v)
+            except IndexError:
+                cate46.append(0)
+
+            try:
+                cate_71 = data[data['cate'] == 71]
+                cate_71_dic = cate_71['o_sku_num'].values
+                cate_71_v = cate_71_dic[0]
+                cate71.append(cate_71_v)
+            except IndexError:
+                cate71.append(0)
+
+            try:
+                cate_83 = data[data['cate'] == 83]
+                cate_83_dic = cate_83['o_sku_num'].values
+                cate_83_v = cate_83_dic[0]
+                cate83.append(cate_83_v)
+            except IndexError:
+                cate83.append(0)
+
+            try:
+                cate_101 = data[data['cate'] == 83]
+                cate_101_dic = cate_101['o_sku_num'].values
+                cate_101_v = cate_101_dic[0]
+                cate101.append(cate_101_v)
+            except IndexError:
+                cate101.append(0)
+
+        plt.plot(cate1, 'r-', linewidth=1, label='1')
+        plt.plot(cate30, 'g-', linewidth=1, label='30')
+        plt.plot(cate46, 'b-', linewidth=1, label='46')
+        plt.plot(cate71, 'k-', linewidth=1, label='71')
+        plt.plot(cate83, 'm-', linewidth=1, label='83')
+        plt.plot(cate101, 'y-', linewidth=1, label='101')
+
+        plt.xlabel('性别 %s 的类别销量对比' % (j), fontsize=12)
+        plt.ylabel('销量', fontsize=12)
+
+    plt.grid(b=True, ls=':')
+    plt.show()
+
+
+def show_analyze_date():
+    all_date = []
+    for i in range(364):
+        date = datetime.strptime(start_date, '%Y-%m-%d') + timedelta(days=1)
+        date = date.strftime('%Y-%m-%d')
+        order_by_date = get_order_by_date(date)
+        all_date.append(order_by_date)
+        start_date = date
+    plat_date(all_date)
+
+
+def show_analyze_date_sex():
+    dump_path = './cache/show_analyze_date_sex.pkl'
     start_date = '2016-05-01'
     all_date = []
-    if is_exist(dump_path):
-        analyze = load_data(dump_path)
-    else:
-        for i in range(364):
-            date = datetime.strptime(start_date, '%Y-%m-%d') + timedelta(days=1)
-            date = date.strftime('%Y-%m-%d')
-            order_by_date = get_order_by_date(date)
-            all_date.append(order_by_date)
-            start_date = date
-    plat_date(all_date)
+    for i in range(364):
+        date = datetime.strptime(start_date, '%Y-%m-%d') + timedelta(days=1)
+        date = date.strftime('%Y-%m-%d')
+        order_by_date = get_order_by_date_sex(date)
+        all_date.append(order_by_date)
+        start_date = date
+    plat_date_sex(all_date)
 
 
 if __name__ == '__main__':
@@ -269,4 +386,5 @@ if __name__ == '__main__':
     end_date = '2017-04-30'
     # get_order_cate()
     # get_analyze_by_date(start_date, end_date)
-    show_analyze()
+    # show_analyze_date()
+    show_analyze_date_sex()
