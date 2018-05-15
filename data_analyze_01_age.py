@@ -166,14 +166,14 @@ def get_order_by_date(date):
     return order
 
 
-def get_order_by_date_sex(date):
+def get_order_by_date_age(date):
     '''
     通过开始时间与结束时间截取订单片段,只需要品类和销量,分性别维度
     :param start_date:
     :param end_date:
     :return:
     '''
-    dump_path = './cache/get_order_by_date_sex_%s.pkl' % (date)
+    dump_path = './cache/get_order_by_date_age_%s.pkl' % (date)
     if is_exist(dump_path):
         order = load_data(dump_path)
     else:
@@ -181,10 +181,9 @@ def get_order_by_date_sex(date):
         cate = get_all_cate()
         order = order[order.o_date == date]
         order = pd.merge(order, cate, on='sku_id', how='left')
-        order = order[['cate', 'o_sku_num', 'sex']]
-        order = order.groupby(['cate', 'sex'], as_index=False).sum()
+        order = order[['cate', 'o_sku_num', 'age']]
+        order = order.groupby(['cate', 'age'], as_index=False).sum()
         order['date'] = date
-        order = fill_date(order, date)
         dump_data(order, dump_path)
     return order
 
@@ -238,53 +237,25 @@ def get_order_cate():
     return order
 
 
-def get_analyze_by_date(date):
-    analyze = get_order_cate()
-    analyze = analyze[analyze['o_date'] == start_date]
-    return analyze
-
-
-def plat_date(all_order):
-    cate_1 = []
-    cate_30 = []
-    cate_46 = []
-    cate_71 = []
-    cate_83 = []
-    cate_101 = []
+def plat_date_age(all_order):
+    age_0 = []
+    age_1 = []
+    age_2 = []
+    age_3 = []
+    age_4 = []
+    age_5 = []
+    age_6 = []
     for i, data in enumerate(all_order):
-        time.append(data['o_date'][0])
-        cate_1.append(data[data['cate'] == 1]['o_sku_num'][0])
-        cate_30.append(data[data['cate'] == 30]['o_sku_num'][1])
-        cate_46.append(data[data['cate'] == 46]['o_sku_num'][2])
-        cate_71.append(data[data['cate'] == 71]['o_sku_num'][3])
-        cate_83.append(data[data['cate'] == 83]['o_sku_num'][4])
-        cate_101.append(data[data['cate'] == 101]['o_sku_num'][5])
+        age_0.append(data[data['age'] == -1][['o_sku_num', 'cate']])
+        age_1.append(data[data['age'] == 1][['o_sku_num', 'cate']])
+        age_2.append(data[data['age'] == 2][['o_sku_num', 'cate']])
+        age_3.append(data[data['age'] == 3][['o_sku_num', 'cate']])
+        age_4.append(data[data['age'] == 4][['o_sku_num', 'cate']])
+        age_5.append(data[data['age'] == 5][['o_sku_num', 'cate']])
+        age_6.append(data[data['age'] == 6][['o_sku_num', 'cate']])
+    all_data = (age_0, age_1, age_2, age_3, age_4, age_5, age_6)
     mpl.rcParams['font.sans-serif'] = ['SimHei']
     mpl.rcParams['axes.unicode_minus'] = False
-    plt.figure(facecolor='w', figsize=(20, 20))
-    plt.plot(cate_1, 'r-', linewidth=1, label='1')
-    plt.plot(cate_30, 'g-', linewidth=1, label='30')
-    plt.plot(cate_46, 'b-', linewidth=1, label='46')
-    plt.plot(cate_71, 'k-', linewidth=1, label='71')
-    plt.plot(cate_83, 'm-', linewidth=1, label='83')
-    plt.plot(cate_101, 'y-', linewidth=1, label='101')
-    plt.title('销量对比', fontsize=18)
-    plt.grid(b=True, ls=':')
-    plt.show()
-
-
-def plat_date_sex(all_order):
-    sex_0 = []
-    sex_1 = []
-    sex_2 = []
-    for i, data in enumerate(all_order):
-        sex_0.append(data[data['sex'] == 0][['o_sku_num', 'cate']])
-        sex_1.append(data[data['sex'] == 1][['o_sku_num', 'cate']])
-        sex_2.append(data[data['sex'] == 2][['o_sku_num', 'cate']])
-    all_data = (sex_0, sex_1, sex_2)
-    mpl.rcParams['font.sans-serif'] = ['SimHei']
-    mpl.rcParams['axes.unicode_minus'] = False
-
     for j, data in enumerate(all_data):
         cate1 = []
         cate30 = []
@@ -292,7 +263,7 @@ def plat_date_sex(all_order):
         cate71 = []
         cate83 = []
         cate101 = []
-        # plt.subplot(3, 1, j + 1)
+        # plt.subplot(7, 1, j + 1)
         plt.figure(figsize=(20, 20), facecolor='w')
         for i, data in enumerate(data):
             try:
@@ -350,35 +321,24 @@ def plat_date_sex(all_order):
         plt.plot(cate83, 'm-', linewidth=1, label='83')
         plt.plot(cate101, 'y-', linewidth=1, label='101')
 
-        plt.xlabel('性别 %s 的类别销量对比' % (j), fontsize=12)
-        plt.ylabel('销量', fontsize=12)
-        plt.suptitle('性别%s销量对比' % (j), fontsize=16)
+        plt.xlabel('年龄 %s 的类别销量对比' % (j), fontsize=10)
+        plt.ylabel('销量', fontsize=10)
         plt.grid(b=True, ls=':')
+        plt.title('年龄%s类别销量对比' % (j), fontsize=20)
     plt.show()
 
 
-def show_analyze_date():
-    all_date = []
-    for i in range(364):
-        date = datetime.strptime(start_date, '%Y-%m-%d') + timedelta(days=1)
-        date = date.strftime('%Y-%m-%d')
-        order_by_date = get_order_by_date(date)
-        all_date.append(order_by_date)
-        start_date = date
-    plat_date(all_date)
-
-
-def show_analyze_date_sex():
+def show_analyze_date_age():
     dump_path = './cache/show_analyze_date_sex.pkl'
     start_date = '2016-05-01'
     all_date = []
     for i in range(364):
         date = datetime.strptime(start_date, '%Y-%m-%d') + timedelta(days=1)
         date = date.strftime('%Y-%m-%d')
-        order_by_date = get_order_by_date_sex(date)
+        order_by_date = get_order_by_date_age(date)
         all_date.append(order_by_date)
         start_date = date
-    plat_date_sex(all_date)
+    plat_date_age(all_date)
 
 
 if __name__ == '__main__':
@@ -388,4 +348,4 @@ if __name__ == '__main__':
     # get_order_cate()
     # get_analyze_by_date(start_date, end_date)
     # show_analyze_date()
-    show_analyze_date_sex()
+    show_analyze_date_age()
