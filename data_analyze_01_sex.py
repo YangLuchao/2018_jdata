@@ -184,7 +184,7 @@ def get_order_by_date_sex(date):
         order = order[['cate', 'o_sku_num', 'sex']]
         order = order.groupby(['cate', 'sex'], as_index=False).sum()
         order['date'] = date
-        order = fill_date(order, date)
+        # order = fill_date(order, date)
         dump_data(order, dump_path)
     return order
 
@@ -244,35 +244,6 @@ def get_analyze_by_date(date):
     return analyze
 
 
-def plat_date(all_order):
-    cate_1 = []
-    cate_30 = []
-    cate_46 = []
-    cate_71 = []
-    cate_83 = []
-    cate_101 = []
-    for i, data in enumerate(all_order):
-        time.append(data['o_date'][0])
-        cate_1.append(data[data['cate'] == 1]['o_sku_num'][0])
-        cate_30.append(data[data['cate'] == 30]['o_sku_num'][1])
-        cate_46.append(data[data['cate'] == 46]['o_sku_num'][2])
-        cate_71.append(data[data['cate'] == 71]['o_sku_num'][3])
-        cate_83.append(data[data['cate'] == 83]['o_sku_num'][4])
-        cate_101.append(data[data['cate'] == 101]['o_sku_num'][5])
-    mpl.rcParams['font.sans-serif'] = ['SimHei']
-    mpl.rcParams['axes.unicode_minus'] = False
-    plt.figure(facecolor='w', figsize=(20, 20))
-    plt.plot(cate_1, 'r-', linewidth=1, label='1')
-    plt.plot(cate_30, 'g-', linewidth=1, label='30')
-    plt.plot(cate_46, 'b-', linewidth=1, label='46')
-    plt.plot(cate_71, 'k-', linewidth=1, label='71')
-    plt.plot(cate_83, 'm-', linewidth=1, label='83')
-    plt.plot(cate_101, 'y-', linewidth=1, label='101')
-    plt.title('销量对比', fontsize=18)
-    plt.grid(b=True, ls=':')
-    plt.show()
-
-
 def plat_date_sex(all_order):
     sex_0 = []
     sex_1 = []
@@ -285,16 +256,15 @@ def plat_date_sex(all_order):
     mpl.rcParams['font.sans-serif'] = ['SimHei']
     mpl.rcParams['axes.unicode_minus'] = False
 
-    for j, data in enumerate(all_data):
+    for j, data_1 in enumerate(all_data):
         cate1 = []
         cate30 = []
         cate46 = []
         cate71 = []
         cate83 = []
         cate101 = []
-        # plt.subplot(3, 1, j + 1)
         plt.figure(figsize=(20, 20), facecolor='w')
-        for i, data in enumerate(data):
+        for i, data in enumerate(data_1):
             try:
                 cate_1 = data[data['cate'] == 1]
                 cate_1_dic = cate_1['o_sku_num'].values
@@ -336,36 +306,24 @@ def plat_date_sex(all_order):
                 cate83.append(0)
 
             try:
-                cate_101 = data[data['cate'] == 83]
+                cate_101 = data[data['cate'] == 101]
                 cate_101_dic = cate_101['o_sku_num'].values
                 cate_101_v = cate_101_dic[0]
                 cate101.append(cate_101_v)
             except IndexError:
                 cate101.append(0)
-
-        plt.plot(cate1, 'r-', linewidth=1, label='1')
-        plt.plot(cate30, 'g-', linewidth=1, label='30')
-        plt.plot(cate46, 'b-', linewidth=1, label='46')
-        plt.plot(cate71, 'k-', linewidth=1, label='71')
-        plt.plot(cate83, 'm-', linewidth=1, label='83')
-        plt.plot(cate101, 'y-', linewidth=1, label='101')
-
+        plt.plot(cate1, 'r', lw=1, label='1')
+        plt.plot(cate30, 'g', lw=1, label='30')
+        plt.plot(cate46, 'b', lw=1, label='46')
+        plt.plot(cate71, 'k', lw=1, label='71')
+        plt.plot(cate83, 'm', lw=1, label='83')
+        plt.plot(cate101, 'y', lw=1, label='101')
         plt.xlabel('性别 %s 的类别销量对比' % (j), fontsize=12)
         plt.ylabel('销量', fontsize=12)
-        plt.suptitle('性别%s销量对比' % (j), fontsize=16)
+        plt.legend(loc='upper left')
+        plt.title('性别%s销量对比' % (j), fontsize=16)
         plt.grid(b=True, ls=':')
     plt.show()
-
-
-def show_analyze_date():
-    all_date = []
-    for i in range(364):
-        date = datetime.strptime(start_date, '%Y-%m-%d') + timedelta(days=1)
-        date = date.strftime('%Y-%m-%d')
-        order_by_date = get_order_by_date(date)
-        all_date.append(order_by_date)
-        start_date = date
-    plat_date(all_date)
 
 
 def show_analyze_date_sex():

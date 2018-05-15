@@ -223,15 +223,15 @@ def plat_date_cate_top1(order):
         if f == 1:
             C.append("r")
         elif f == 30:
-            C.append("k")
+            C.append("g")
         elif f == 46:
-            C.append('y')
-        elif f == 71:
-            C.append('m')
-        elif f == 83:
             C.append('b')
+        elif f == 71:
+            C.append('k')
+        elif f == 83:
+            C.append('m')
         elif f == 101:
-            C.append('g')
+            C.append('y')
     # C = DataFrame(C)
     ax.scatter(X['sex'], Y['age'], Z['o_sku_num'], c=C, alpha=0.4, s=10)
     ax.set_xlabel('年龄维度', fontsize=12)

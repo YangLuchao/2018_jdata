@@ -307,20 +307,20 @@ def plat_date_age(all_order):
                 cate83.append(0)
 
             try:
-                cate_101 = data[data['cate'] == 83]
+                cate_101 = data[data['cate'] == 101]
                 cate_101_dic = cate_101['o_sku_num'].values
                 cate_101_v = cate_101_dic[0]
                 cate101.append(cate_101_v)
             except IndexError:
                 cate101.append(0)
 
-        plt.plot(cate1, 'r-', linewidth=1, label='1')
-        plt.plot(cate30, 'g-', linewidth=1, label='30')
-        plt.plot(cate46, 'b-', linewidth=1, label='46')
-        plt.plot(cate71, 'k-', linewidth=1, label='71')
-        plt.plot(cate83, 'm-', linewidth=1, label='83')
-        plt.plot(cate101, 'y-', linewidth=1, label='101')
-
+        plt.plot(cate1, 'r', linewidth=1, label='1')
+        plt.plot(cate30, 'g', linewidth=1, label='30')
+        plt.plot(cate46, 'b', linewidth=1, label='46')
+        plt.plot(cate71, 'k', linewidth=1, label='71')
+        plt.plot(cate83, 'm', linewidth=1, label='83')
+        plt.plot(cate101, 'y', linewidth=1, label='101')
+        plt.legend(loc='upper left')
         plt.xlabel('年龄 %s 的类别销量对比' % (j), fontsize=10)
         plt.ylabel('销量', fontsize=10)
         plt.grid(b=True, ls=':')
