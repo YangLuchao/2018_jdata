@@ -10,6 +10,14 @@ jd数据大赛全过程：
         data_analyze_01_sex.py：区分性别维度展示不同分类在2016-05-01~2017-04-30的销售情况
         data_analyze_cate_top1.py：各个类别下销售量top1的单品在2016-05-01~2017-04-30的销售情况
 
+## deep learning model
+- python create_item_table.py
+- python fc.py
+- python predict.py
+
+### eivironments
+- python 3.6
+
 
 
 
