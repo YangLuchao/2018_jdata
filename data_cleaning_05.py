@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-2018/5/14
+2018/5/17
 # code is far away from bugs with the god animal protecting
     I love animals. They taste delicious.
               ┏┓      ┏┓
@@ -16,19 +16,12 @@
                 ┗┓┓┏━┳┓┏┛
                   ┃┫┫  ┃┫┫
                   ┗┻┛  ┗┻┛
-                  数据清洗第四版，给ARIMA提供数据
 """
 
-
-
-import time
-from datetime import datetime
-from datetime import timedelta
-import pandas as pd
-import pickle
 import os
-import math
-import numpy as np
+import pickle
+
+import pandas as pd
 
 # 定义文件名
 JDATA_USER_ACTION = 'data_ori/jdata_user_action.csv'
@@ -78,36 +71,60 @@ def get_from_fname(fname):
     return df_item
 
 
-def get_all_order():
+def get_all_sku_05():
+    '''
+    获取所有商品信息
+    :return:
+    '''
+    dump_path = './cache/get_all_sku_05.pkl'
+    if is_exist(dump_path):
+        sku = load_data(dump_path)
+    else:
+        sku = get_from_fname(JDATA_SKU_BASIC_INFO)
+        para_2_one_hot = pd.get_dummies(sku['para_2'], prefix='para_2')
+        para_3_one_hot = pd.get_dummies(sku['para_3'], prefix='para_3')
+        sku = pd.concat([sku, para_2_one_hot, para_3_one_hot], axis=1)
+        del sku['para_2']
+        del sku['para_3']
+        dump_data(sku, dump_path)
+    return sku
+
+
+def get_all_user_05():
+    '''
+    获取所有用户信息
+    :return:
+    '''
+    dump_path = './cache/get_all_user_05.pkl'
+    if is_exist(dump_path):
+        user = load_data(dump_path)
+    else:
+        user = get_from_fname(JDATA_USER_BASIC_INFO)
+        dump_data(user, dump_path)
+    return user
+
+
+def get_all_order_05():
     '''
     获取所有订单信息
     :return:
     '''
-    dump_path = './cache/get_all_order.pkl'
+    dump_path = './cache/get_all_order_05.pkl'
     if is_exist(dump_path):
         order = load_data(dump_path)
     else:
         order = get_from_fname(JDATA_USER_ORDER)
-        dump_data(order, dump_path)
-    return order
-
-
-def get_order_by_date(start_date, end_date):
-    '''
-    通过开始时间与结束时间截取订单片段
-    :param start_date:
-    :param end_date:
-    :return:
-    '''
-    dump_path = './cache/get_order_by_date_%s_%s.pkl' % (start_date, end_date)
-    if is_exist(dump_path):
-        order = load_data(dump_path)
-    else:
-        order = get_all_order()
-        order = order[(order.o_date >= start_date) & (order.o_date < end_date)]
+        user = get_all_user_05()
+        sku = get_all_sku_05()
+        order = pd.merge(order, user, how='left', on='user_id')
+        order = pd.merge(order, sku, how='left', on='sku_id')
+        order = order[(order['age'] != 1) & (order['age'] != 6)]
+        order = order[(order['cate'] == 101) & (order['cate'] != 71) & (order['cate'] != 30)]
+        # order = order.sort_values(by=['cate', 'o_date'], ascending=[True, True])
+        # order = order.groupby(['user_id', 'o_date', 'cate'], as_index=False).sum()
         dump_data(order, dump_path)
     return order
 
 
 if __name__ == '__main__':
-    pass
+    get_all_order_05()

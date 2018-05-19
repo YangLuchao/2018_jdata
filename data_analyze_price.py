@@ -171,78 +171,18 @@ def get_all_sku():
         del sku['para_2']
         del sku['para_3']
         sku = sku.groupby(['cate', 'sku_id'], as_index=False).sum()
-        sku = sku[['cate', 'sku_id']]
+        # sku = sku[['cate', 'sku_id']]
         dump_data(sku, dump_path)
     return sku
 
-
-def get_all_cate():
-    '''
-    获取所有类别
-    :return:
-    '''
-    dump_path = './cache/get_all_cate.pkl'
-    if is_exist(dump_path):
-        sku_cate = load_data(dump_path)
-    else:
-        sku = get_all_sku()
-        sku_cate = sku[['sku_id', 'cate']]
-        dump_data(sku_cate, dump_path)
-    return sku_cate
+def get_sku_by_cate(cate):
+    sku = get_all_sku()
+    sku = sku[sku['cate'] == cate]
+    sku = sku.sort_values(by='price', ascending=False)
+    print(1)
 
 
-def get_order_cate():
-    dump_path = './cache/get_order_cate.pkl'
-    if is_exist(dump_path):
-        order = load_data(dump_path)
-    else:
-        order = get_all_order()
-        cate = get_all_cate()
-        order = pd.merge(order, cate, on='sku_id', how='left')
-        dump_data(order, dump_path)
-    return order
 
-
-def get_analyze_by_date(date):
-    analyze = get_order_cate()
-    analyze = analyze[analyze['o_date'] == start_date]
-    return analyze
-
-
-def plat_date_cate_top1(order):
-    mpl.rcParams['font.sans-serif'] = ['SimHei']
-    mpl.rcParams['axes.unicode_minus'] = False
-    X = order[['sex']]
-    Y = order[['age']]
-    Z = order[['o_sku_num']]
-    F = order[['cate']]
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    C = []
-    for f in F['cate']:
-        if f == 1:
-            C.append("r")
-        elif f == 30:
-            C.append("k")
-        elif f == 46:
-            C.append('y')
-        elif f == 71:
-            C.append('m')
-        elif f == 83:
-            C.append('b')
-        elif f == 101:
-            C.append('g')
-    # C = DataFrame(C)
-    ax.scatter(X['sex'], Y['age'], Z['o_sku_num'], c=C, alpha=0.4, s=10)
-    ax.set_xlabel('年龄维度', fontsize=12)
-    ax.set_ylabel('性别维度', fontsize=12)
-    ax.set_zlabel('销量', fontsize=12)
-    plt.show()
-
-
-def show_analyze_date_cate_top1():
-    order_by_cate_top1 = get_order_by_date_cate_top1()
-    plat_date_cate_top1(order_by_cate_top1)
 
 
 if __name__ == '__main__':
@@ -251,5 +191,5 @@ if __name__ == '__main__':
     end_date = '2017-04-30'
     # get_order_cate()
     # get_analyze_by_date(start_date, end_date)
-    # show_analyze_date()
-    show_analyze_date_cate_top1()
+    get_sku_by_cate(101)
+
